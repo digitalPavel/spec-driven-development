@@ -1,6 +1,6 @@
 # Candidate Assessment: Spec-Driven Development With Codegen Tools
 
-This assessment evaluates how you use modern code generation tools (for example `5.2-Codex`, `Claude`, and similar) to design, build, and test a software application using a spec-driven development pattern. You may build a frontend, a backend, or both.
+This assessment evaluates how you use modern code generation tools (for example `5.2-Codex`, `Claude`, `Copilot`, and similar) to design, build, and test a software application using a spec-driven development pattern. You may build a frontend, a backend, or both.
 
 ## Goals
 - Build a working application with at least one meaningful feature.
