@@ -15,3 +15,6 @@
 
 ## TODO Hygiene
 - When a TODO is implemented, it must be removed from `TODO.md`.
+
+## LLM Context
+- The LLM/Agent must not refer to `README.md` as context. This document is for the human/user only.
