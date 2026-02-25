@@ -1,48 +1,69 @@
+using Booking.Api.Contracts;
 using Booking.Core;
 using Booking.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// OpenAPI + Swagger UI
 builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
+// DI
 builder.Services.AddSingleton<IAppointmentRepository, InMemoryAppointmentRepository>();
 builder.Services.AddSingleton<ITimeProvider, SystemTimeProvider>();
 builder.Services.AddSingleton<BookingService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Swagger UI in Development
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// -------------------------
+// Endpoints (per spec)
+// -------------------------
 
-app.MapGet("/weatherforecast", () =>
+app.MapPost("/appointments", async (
+    CreateAppointmentRequest req,
+    BookingService service,
+    CancellationToken ct) =>
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    try
+    {
+        var created = await service.CreateAsync(
+            startUtc: req.StartUtc,
+            endUtc: req.EndUtc,
+            customer: req.Customer,
+            ct: ct);
+
+        return Results.Ok(created);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex) when (ex.Message == BookingErrors.Conflict)
+    {
+        return Results.Conflict(new { error = ex.Message });
+    }
 })
-.WithName("GetWeatherForecast");
+.WithName("CreateAppointment")
+.WithOpenApi();
+
+app.MapGet("/appointments", async (
+    IAppointmentRepository repo,
+    CancellationToken ct) =>
+{
+    var items = await repo.GetAllAsync(ct);
+    return Results.Ok(items);
+})
+.WithName("GetAppointments")
+.WithOpenApi();
 
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
